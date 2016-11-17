@@ -67,7 +67,7 @@ PROC initGameState
 	ret
 ENDP initGameState
 
-PROC moveBlock ; !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+PROC moveBlock ; !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	ARG amount:dword
 	USES eax, edx
 mov ah, 9     ; Print string on screen
