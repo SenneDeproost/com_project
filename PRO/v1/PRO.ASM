@@ -4,7 +4,7 @@ MODEL FLAT, C
 ASSUME cs:_TEXT,ds:FLAT,es:FLAT,fs:FLAT,gs:FLAT
 
 ;*******************************************************************************
-;*                     PROGRAMMEERPROJECT COMPUTERSYSTEMEN                     *
+;*                  ++ PROGRAMMEERPROJECT COMPUTERSYSTEMEN ++                  *
 ;*                                    PONG                                     *
 ;*                     By Senne Deproost and Seppe Seghers                     *
 ;*******************************************************************************
