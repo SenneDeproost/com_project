@@ -34,33 +34,7 @@ PROC waitVBlank
 	ret
 ENDP waitVBlank
 
-PROC setupVideo
-	USES eax
 
-	mov	ax, 13h
-	int	10h
-
-	ret
-ENDP setupVideo
-
-PROC unsetupVideo
-	USES eax
-
-	mov	ax, 03h
-	int	10h
-
-	ret
-ENDP unsetupVideo
-
-; Procedure to exit the program
-PROC exit
-	USES eax
-
-	call unsetupVideo
-	mov	eax, 4c00h
-	int 21h
-	ret
-ENDP exit
 
 ; Procedure to initialize a new game
 PROC initGameState
@@ -115,6 +89,7 @@ PROC handleUserInput
 	cmp ah, 72	; arrow up
 	jne @@n5
 	call rotateBlock
+	;call draw_paddle_pla, 1 ;!!!!!!!!!!!!!!!!!!!!
 	jmp @@no_key_pressed
 @@n5:
 @@no_key_pressed:
@@ -131,70 +106,18 @@ PROC updateGameState
 	ret
 ENDP updateGameState
 
+PROC exit
+mov ah,4ch
+mov al,00			;terminate program
+int 21h
+ENDP exit
+
+
 ; Procedure to draw everything on screen
 PROC drawAll
 	call waitVBlank
 	ret
 ENDP drawAll
-
-;+-+-+-+-+- PADDLE 1 -+-+-+-+-+
-
-PROC drawRectangle
-ARG @@h:dword, @@w:dword, @@colour:word ; Er kunnen geen bytes naar de stack gepushed worden
-LOCAL @@Xtl:dword, @@Ytl:dword
-USES eax, ecx, edi
-
-; Bereken de cordinaten van de top linkse hoek van de RECTANGLEWIDTH
-mov eax, [SCREENWIDTH]
-sub eax, [@@w]
-shr eax, 2 ; Delen door twee
-mov [@@Xtl], eax
-mov eax, [SCREENHEIGHT]
-sub eax, [@@h]
-shr eax, 1
-mov [@@Ytl], eax
-
-
-; Bereken de index van de top left corner van de rectangle
-mul [SCREENWIDTH]
-add eax, [@@Xtl]
-mov eax, 000A0000h ; Wijst naar destination
-
-; Plot the top edge
-mov edi, eax
-mov ecx, [@@w]
-mov al, [byte ptr @@colour]
-
-; Plot the right edge
-dec edi
-mov ecx, [00h]
-dec ecx
-@@plotRightEdge:
-  add edi, [SCREENWIDTH]
-  mov [edi], al
-jnz @@plotRightEdge
-
-
-
-
-; Plot bottom edge
-std
-mov ecx, [@@w]
-
-; Plot the left edge
-inc edi
-mov ecx, [@@h]
-dec eax
-@@plotLeftEdge:
-  sub edi, [SCREENWIDTH]
-  mov [edi], al
-  dec ecx
-jnz @@plotLeftEdge
-
-rep stosb ; ECHT MEE LEREN WERKEN!
-ret
-ENDP drawRectangle
-
 
 ;+-+-+-+-+- ACHTERGROND -+-+-+-+-+
 
@@ -252,9 +175,44 @@ ENDP updatePalette                      ; DOS INT 21h
 
 ;+-+-+-+-+-+-+- LOOP -+-+-+-+-+-+-+
 
+
+
 ;+-+-+-+-+-+-+- PPLA -+-+-+-+-+-+-+
 
+PROC draw_paddle_pla
+	ARG @@y_pos:word
+	USES eax, ebx, ecx, edx, esi, edi
 ; Paddle player
+
+paddle_1:
+; Specs van de figuur.
+mov cx, 6 ; kolom
+mov dx, [@@y_pos]  ; rij
+mov al, 7 ; kleur
+mov ah, 0ch
+
+; Teken paddle_1
+draw_paddle_1:
+inc cx
+int 10h
+cmp cx, 10 ; (10 - 6 = 4 breedte van paddle)
+JNE draw_paddle_1
+
+mov cx, 6  ; reset
+inc dx      ; volgende rij
+cmp dx, 100
+JNE draw_paddle_1
+
+ENDP draw_paddle_pla
+
+PROC setupVideo
+	USES eax
+
+	mov	ax, 13h
+	int	10h
+
+	ret
+ENDP setupVideo
 
 ;+-+-+-+-+-+-+- PCOM -+-+-+-+-+-+-+
 
@@ -286,19 +244,7 @@ PROC main
         ; Kleur de achtergrond
       ;  call fillBackground, 1          ; 2 is de code voor groen
 
-        ; Wachten op en toets
-        mov ah, 000h ;!!!!!!!!!!!!!!!!!!!!!!!!!!! in al de specifieke cont toets zetten
-        int 16h
 
-        ; Terug naar de textmodus
-        mov ah, 000h
-        mov al, 003h
-        int 10h
-
-        ; Afsluiten
-        mov ax, 4c00h                  ; AH = 4Ch - Exit To DOS
-        int 21h                        ; DOS INT 21h
-ENDP main
 
 ; MAIN Start of program
 start:
@@ -310,17 +256,25 @@ start:
 
 	; Setup and initialization
 	call setupVideo
-	call initGameState
+;	call initGameState
   call updatePalette, 2
   call fillBackground, 3
+	;call draw_paddle_pla, 1
 
-	; Main game (endless) loop
+	;Main game (endless) loop
 	@@gameLoop:
-	call handleUserInput
-	call updateGameState
-	call drawAll
+;	call handleUserInput
+;	call updateGameState
+	;call fillBackground, 3
+
+;	call drawAll
 
 	jmp @@gameLoop
+
+
+	;+-+-+-+-+-+-+- TESTZONE -+-+-+-+-+-+-+
+
+
 
 ; # =============================================================================
 ; DATA
@@ -338,6 +292,10 @@ DATASEG
 	moveMsg		db 'moveBlock$'
 	rotateMsg	db 'rotateBlock$'
 	pointMsg	db '.$'
+
+	; THE NEXT BIG THING
+	startaddr	dw	0a000h	;start of video memory
+  colour	db	1
 
 ; # =============================================================================
 ; STACK

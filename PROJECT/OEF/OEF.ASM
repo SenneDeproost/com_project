@@ -25,36 +25,43 @@ pop es 					            		; And write this value to ES
 
 
 PROC drawBall
-  ;ARG @@x_pos:word, @@y_pos:word
+  ARG @@x_pos:word, @@y_pos:word
+  LOCAL @@x_pos_2:word, @@y_pos_2:word
   USES eax, ebx, ecx, edx
 
-; Specs van de line
-mov cx, [b_x_pos_1] ; kolom
-mov dx, [b_y_pos_1] ; rij
-mov al, 7 ; kleur
+  mov cx, [@@x_pos] ; kolom
+  mov dx, [@@y_pos] ; rij
+  mov al, 7 ; kleur (7 = white)
+  mov ah, 0ch
 
-; Voeg breedte toe aan b_x_pos_2.
-mov bx, cx
-add bx, [b_width]
-mov [b_x_pos_2], bx
+  ; Voeg breedte toe aan b_x_pos_2.
+  mov bx, cx
+  add bx, [b_width]
+  mov [@@x_pos_2], bx
 
-; Voeg hoogte toe aan b_y_pos_2.
-mov bx, dx
-add bx, [b_width]
-mov [b_y_pos_2], bx
+  ; Voeg hoogte toe aan b_y_pos_2.
+  mov bx, dx
+  add bx, [b_width]
+  mov [@@y_pos_2], bx
 
-@@draw_ball:
-inc cx
-int 10h
-cmp cx, [b_x_pos_2]
-JNE @@draw_ball
+  @@draw_ball:
+  inc cx
+  int 10h
+  cmp cx, [@@x_pos_2]
+  JNE @@draw_ball
 
-mov cx, [b_x_pos_1]  ; reset
-inc dx      ; volgende rij
-cmp dx, [b_y_pos_2]
-JNE @@draw_ball
+  mov cx, [@@x_pos]  ; reset
+  inc dx      ; volgende rij
+  cmp dx, [@@y_pos_2]
+  JNE @@draw_ball
 
-ENDP drawBall
+ENDP drawBalls
+
+PROC drawBalls
+  USES eax, ebx, ecx, edx
+
+
+ENDP drawBalls
 
 
 jmp start
@@ -69,76 +76,8 @@ mov ah, 0   ; set display mode function.
 mov al, 13h ; mode 13h = 320x200 pixels, 256 colors.
 int 10h     ; set it!
 
+;call drawBall, 50, 50
 
-paddle_1:
-; Specs van de figuur.
-mov cx, 6 ; kolom
-mov dx, 5  ; rij
-mov al, 7 ; kleur
-mov ah, 0ch
-
-; Teken paddle_1
-draw_paddle_1:
-inc cx
-int 10h
-cmp cx, 10 ; (10 - 6 = 4 breedte van paddle)
-JNE draw_paddle_1
-
-mov cx, 6  ; reset
-inc dx      ; volgende rij
-cmp dx, 30
-JNE draw_paddle_1
-
-paddle_2:
-; Specs van de figuur.
-mov cx, 310 ; kolom
-mov dx, 5  ; rij
-mov al, 7 ; kleur
-mov ah, 0ch
-
-; Teken paddle_2
-draw_paddle_2:
-inc cx
-int 10h
-cmp cx, 314 ; (314 - 310 = 4 breedte van paddle)
-JNE draw_paddle_2
-
-mov cx, 310  ; reset
-inc dx      ; volgende rij
-cmp dx, 30
-JNE draw_paddle_2
-
-middle_line:
-; Specs van de line
-mov cx, 160 ; kolom
-mov dx, 0 ; rij
-mov al, 7 ; start kleur
-
-draw_middle_line:
-; Lijn is een rechthoek met breedte 1, vandaar minder code dan rechthoek
-int 10h
-inc dx      ; volgende rij
-cmp dx, 200
-JNE draw_middle_line
-
-
-
-
-call drawBall
-
-
-
-
-;vierkant_2:
-;inc cx
-;int 10h
-;cmp cx, 30
-;JNE vierkant_2
-
-;mov cx, 10  ; reset to start of col
-;inc dx      ;next row
-;cmp dx, 30
-;JNE vierkant_2
 
 keypress:
 mov ah,00

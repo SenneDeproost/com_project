@@ -1,0 +1,24 @@
+[33mcommit cda540d21c9d94418cbdc96be4745d923141f3b5[m
+Author: TitansEagle <titanseagle@outlook.com>
+Date:   Mon Nov 21 23:23:51 2016 +0100
+
+    klein testje
+
+[33mcommit d5b37d71b12fb0583d3c29c33a7fdae9e8b8e083[m
+Author: Senne Deproost <sennedeproost@vub.be>
+Date:   Mon Nov 21 23:18:55 2016 +0100
+
+    Padles kunnen getekend worden in de OEF file binnen PROJECT/OEFMAP.
+    In PRO v1 kakn bij het indrukken van de bovenste pijltjestoets een paddle getekend worden.
+
+[33mcommit 364fbbbad40b1faa690bd3d325ac65e2382cf995[m
+Author: Senne Deproost <sennedeproost@vub.be>
+Date:   Thu Nov 17 20:59:49 2016 +0100
+
+    Ongedaan maken van de eerste aanpassingen
+
+[33mcommit d0d88d00c1dee08f75474200bfa7da0fa3ded770[m
+Author: Senne Deproost <sennedeproost@vub.be>
+Date:   Thu Nov 17 20:50:00 2016 +0100
+
+    t is een eerste test met git
