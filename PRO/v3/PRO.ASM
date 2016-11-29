@@ -255,19 +255,41 @@ PROC waitVBlank
 	ret
 ENDP waitVBlank
 
-PROC moveBlock
+PROC movePaddleUp
 	ARG @@speed:dword
 	USES eax, edx
 
   ; Verander de positie van paddle1
 
   mov ax, [paddle1_y_pos]
+
+  ; Test voor bovenste rand.
+  cmp ax, 0
+  jz @@last
+  cmp ax, 180
+
+  @@last:
+	ret
+
+ENDP movePaddleUp
+
+PROC movePaddleDown
+	ARG @@speed:dword
+	USES eax, edx
+
+  ; Verander de positie van paddle1
+
+  mov ax, [paddle1_y_pos]
+
+  ; Test voor onderste rand.
+  jz @@last
   add ax, [speed]
   mov [paddle1_y_pos], ax
 
+  @@last:
 	ret
 
-ENDP moveBlock
+ENDP movePaddleDown
 
 
 PROC rotateBlock
@@ -294,24 +316,24 @@ PROC handleUserInput
 @@n1:
 	cmp ah, 77	; arrow right
 	jne @@n2
-	call moveBlock, 1
+	call movePaddleUp, 1
 	jmp @@no_key_pressed
 @@n2:
 	cmp ah, 75	; arrow left
 	jne @@n3
-	call moveBlock, -1
+	call movePaddleDown, -1
 	jmp @@no_key_pressed
 
 
 @@n3:
 	cmp ah, 80	; arrow down
 	jne @@n4
-	call moveBlock, 4
+	call movePaddleDown, 4
 	jmp @@no_key_pressed
 @@n4:
 	cmp ah, 72	; arrow up
 	jne @@n5
-	call moveBlock, -4
+	call movePaddleUp, -4
 
 	jmp @@no_key_pressed
 @@n5:
@@ -381,6 +403,13 @@ start:
 sti                             ; Set The Interrupt Flag
 cld                             ; Clear The Direction Flag
 
+; VIDEO BUFFER
+
+mov esi, [offset_screenBuffer] ; points to a "db 64000 dup" array
+mov edi, 0a0000h ; the video memory
+mov ecx, 64000 / 4 ; 320 * 200 , but copy groups four bytes
+rep movsd ; moves a dword and updates ecx , e s i and edi
+
 push ds 					             	; Put value of DS register on the stack
 pop es 					            		; And write this value to ES
 
@@ -408,6 +437,16 @@ call updatePalette, 2
 
 
 call drawPaddle, 5, [paddle1_y_pos]
+call drawPaddle, 310, [paddle1_y_pos]
+
+; Put into video memory
+call waitVBlank
+
+;mov esi, [offset_screenBuffer] ; points to a "db 64000 dup" array
+;mov edi, 0a0000h ; the video memory
+;mov ecx, 64000 / 4 ; 320 * 200 , but copy groups four bytes
+;rep movsd ; moves a dword and updates ecx , e s i and edi
+
 
 jmp @@gameLoop
 
@@ -442,6 +481,8 @@ DATASEG
 	; THE NEXT BIG THING
 	startaddr	dw	0a000h	;start of video memory
   colour	db	1
+  offset_screenBuffer dd 64000
+
 
 	; /+/+/+/+  DIMENSIONS +/+/+/+/
 
@@ -451,6 +492,7 @@ DATASEG
 
 	; --- Ball ---
 	ball_width dw 3
+
 
 	; /+/+/+/+ POSITIONS +/+/+/+/
 
