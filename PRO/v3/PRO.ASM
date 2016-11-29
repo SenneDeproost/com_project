@@ -266,7 +266,8 @@ PROC movePaddleUp
   ; Test voor bovenste rand.
   cmp ax, 0
   jz @@last
-  cmp ax, 180
+  add ax, [speed]
+  mov [paddle1_y_pos], ax
 
   @@last:
 	ret
@@ -282,6 +283,7 @@ PROC movePaddleDown
   mov ax, [paddle1_y_pos]
 
   ; Test voor onderste rand.
+  cmp ax, 176 ; Opletten of deze paddle wel op deze plek komen.
   jz @@last
   add ax, [speed]
   mov [paddle1_y_pos], ax
