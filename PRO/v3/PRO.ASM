@@ -165,6 +165,25 @@ ret
 
 ENDP drawBall
 
+PROC moveBall
+	ARG @@ballSpeed:dword
+	ARG @@ball_angle:dword
+	ARG @@ball_direction:dword
+	USES eax, edx
+
+	mov ax, [ball_x_pos]
+	add ax, 1
+	mov [ball_x_pos], ax
+
+	mov ax, [ball_y_pos]
+	add ax, -2
+	mov [ball_y_pos], ax
+
+	call drawBall
+	ret
+
+ENDP moveBall
+
 
 
 ; +/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+
@@ -441,14 +460,7 @@ call updatePalette, 2
 call drawPaddle, 5, [paddle1_y_pos]
 call drawPaddle, 310, [paddle1_y_pos]
 
-; Put into video memory
 call waitVBlank
-
-;mov esi, [offset_screenBuffer] ; points to a "db 64000 dup" array
-;mov edi, 0a0000h ; the video memory
-;mov ecx, 64000 / 4 ; 320 * 200 , but copy groups four bytes
-;rep movsd ; moves a dword and updates ecx , e s i and edi
-
 
 jmp @@gameLoop
 
@@ -514,6 +526,11 @@ DATASEG
 
 	; /+/+/+/+ SPEEDS +/+/+/+/
   paddle1_speed dw 3
+  ballSpeed dw 3
+
+	; ++++++ TEMP (for testing purposes only) ++++++
+	ball_angle dw 2
+	ball_direction dw 1
 
 ; # =============================================================================
 ; STACK
