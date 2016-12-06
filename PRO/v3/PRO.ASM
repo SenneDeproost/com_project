@@ -167,8 +167,6 @@ ENDP drawBall
 
 PROC moveBall
 	ARG @@ballSpeed:dword
-	ARG @@ball_angle:dword
-	ARG @@ball_direction:dword
 	USES eax, edx
 
 	mov ax, [ball_x_pos]
@@ -176,10 +174,9 @@ PROC moveBall
 	mov [ball_x_pos], ax
 
 	mov ax, [ball_y_pos]
-	add ax, -2
+	add ax, 1
 	mov [ball_y_pos], ax
 
-	call drawBall
 	ret
 
 ENDP moveBall
@@ -253,6 +250,45 @@ JNE @@draw_paddle
 ret
 
 ENDP drawPaddle
+
+; +/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+
+; +---------------------- DRAW SPRITES -----------------------+
+; +/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+
+
+
+PROC drawSprite
+ARG @@spritePtr :dword, \
+@@dstPtr :dword, \
+@@x:dword, \
+@@y:dword
+LOCAL @@w:dword, @@h:dword
+USES eax , ebx , ecx , edx , esi , edi
+mov esi , [@@spritePtr ]
+xor eax , eax
+lodsw ; read width in AX
+mov [@@w] , eax
+lodsw ; read height in AX
+mov [@@h] , eax
+mov edi , [@@dstPtr ]
+mov eax , [@@y]
+mov ebx , [SCREENWIDTH]
+mul ebx
+add edi , eax
+add edi , [@@x] ; EDI points to f i r s t pixe l
+mov ecx , [@@h]
+@@drawLine :
+push ecx
+mov ecx , [@@w] ; need to copy a l ine of the spr i t e
+rep movsb ; copy from e s i to edi
+add edi , [SCREENWIDTH]
+sub edi , [@@w] ; edi now points to the next l ine in ds t
+pop ecx
+dec ecx
+jnz @@drawLine
+ret
+ENDP drawSprite
+
+
 
 ; +/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+
 ; +---------------------- INPUT HANDLER ----------------------+
@@ -337,7 +373,7 @@ PROC handleUserInput
 @@n1:
 	cmp ah, 77	; arrow right
 	jne @@n2
-	call movePaddleUp, 1
+	call moveBall, 1
 	jmp @@no_key_pressed
 @@n2:
 	cmp ah, 75	; arrow left
@@ -459,7 +495,9 @@ call updatePalette, 2
 
 call drawPaddle, 5, [paddle1_y_pos]
 call drawPaddle, 310, [paddle1_y_pos]
-
+;call drawSprite, [number0],  [offset_screenBuffer], 1, 1
+call moveBall, 1
+call drawBall, [ball_x_pos], [ball_y_pos]
 call waitVBlank
 
 jmp @@gameLoop
@@ -531,6 +569,34 @@ DATASEG
 	; ++++++ TEMP (for testing purposes only) ++++++
 	ball_angle dw 2
 	ball_direction dw 1
+
+
+  ; /+/+/+/+ NUMBERS +/+/+/+/
+
+number0 dw 4, 8
+db  0, 1, 1, 0
+db  1, 0, 0, 1
+db  1, 0, 0, 1
+db  1, 0, 0, 1
+db  1, 0, 0, 1
+db  1, 0, 0, 1
+db  1, 0, 0, 1
+db  0, 1, 1, 0
+
+number1 dw 4, 8
+db  0, 0, 1, 0
+db  0, 1, 1, 0
+db  1, 0, 1, 0
+db  0, 0, 1, 0
+db  0, 0, 1, 0
+db  0, 0, 1, 0
+db  0, 0, 1, 0
+db  0, 1, 1, 1
+
+
+
+
+
 
 ; # =============================================================================
 ; STACK
