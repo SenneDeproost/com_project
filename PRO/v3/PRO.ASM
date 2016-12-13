@@ -166,15 +166,15 @@ ret
 ENDP drawBall
 
 PROC moveBall
-	ARG @@ballSpeed:dword
+	ARG @@x_speed:word, @@y_speed:word
 	USES eax, edx
 
-	mov ax, [ball_x_pos]
-	add ax, 1
-	mov [ball_x_pos], ax
+	;mov ax, [ball_x_pos]
+	;add ax, [@@x_speed]
+	;mov [ball_x_pos], ax
 
 	mov ax, [ball_y_pos]
-	add ax, 1
+	add ax, [@@y_speed]
 	mov [ball_y_pos], ax
 
 	ret
@@ -373,7 +373,7 @@ PROC handleUserInput
 @@n1:
 	cmp ah, 77	; arrow right
 	jne @@n2
-	call moveBall, 1
+	call moveBall, 1, 3
 	jmp @@no_key_pressed
 @@n2:
 	cmp ah, 75	; arrow left
@@ -592,6 +592,16 @@ db  0, 0, 1, 0
 db  0, 0, 1, 0
 db  0, 0, 1, 0
 db  0, 1, 1, 1
+
+number2 dw 4, 8
+db  0, 1, 1, 0
+db  1, 0, 0, 1
+db  0, 0, 0, 1
+db  0, 0, 1, 0
+db  0, 1, 0, 0
+db  1, 0, 0, 0
+db  1, 0, 0, 0
+db  1, 1, 1, 1
 
 
 
