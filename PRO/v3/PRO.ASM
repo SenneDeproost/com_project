@@ -166,15 +166,15 @@ ret
 ENDP drawBall
 
 PROC moveBall
-	ARG @@x_speed:word, @@y_speed:word
+	ARG @@ballarg:dword
 	USES eax, edx
 
-	;mov ax, [ball_x_pos]
-	;add ax, [@@x_speed]
-	;mov [ball_x_pos], ax
+	mov ax, [ball_x_pos]
+	add ax, [ball_speed]
+	mov [ball_x_pos], ax
 
 	mov ax, [ball_y_pos]
-	add ax, [@@y_speed]
+	add ax, 6
 	mov [ball_y_pos], ax
 
 	ret
@@ -373,7 +373,7 @@ PROC handleUserInput
 @@n1:
 	cmp ah, 77	; arrow right
 	jne @@n2
-	call moveBall, 1, 3
+	call moveBall, 1
 	jmp @@no_key_pressed
 @@n2:
 	cmp ah, 75	; arrow left
@@ -460,15 +460,16 @@ start:
 sti                             ; Set The Interrupt Flag
 cld                             ; Clear The Direction Flag
 
+push ds 					             	; Put value of DS register on the stack
+pop es 					            		; And write this value to ES
+
 ; VIDEO BUFFER
 
-mov esi, [offset_screenBuffer] ; points to a "db 64000 dup" array
+mov esi, offset offset_screenBuffer ; points to a "db 64000 dup" array
 mov edi, 0a0000h ; the video memory
 mov ecx, 64000 / 4 ; 320 * 200 , but copy groups four bytes
 rep movsd ; moves a dword and updates ecx , e s i and edi
 
-push ds 					             	; Put value of DS register on the stack
-pop es 					            		; And write this value to ES
 
 
 call setupVideo
@@ -495,7 +496,22 @@ call updatePalette, 2
 
 call drawPaddle, 5, [paddle1_y_pos]
 call drawPaddle, 310, [paddle1_y_pos]
-;call drawSprite, [number0],  [offset_screenBuffer], 1, 1
+
+push eax
+push ebx
+lea eax,[number0]
+mov ebx, 0a0000h
+;;;lea ebx,[offset_screenBuffer]
+call drawSprite, eax,  ebx, 0, 0
+pop ebx
+pop eax
+
+;;;mov esi, offset offset_screenBuffer ; points to a "db 64000 dup" array
+;;;mov edi, 0a0000h ; the video memory
+;;;mov ecx, 64000 / 4 ; 320 * 200 , but copy groups four bytes
+;;;rep movsd ; moves a dword and updates ecx , e s i and edi
+
+
 call moveBall, 1
 call drawBall, [ball_x_pos], [ball_y_pos]
 call waitVBlank
@@ -533,7 +549,7 @@ DATASEG
 	; THE NEXT BIG THING
 	startaddr	dw	0a000h	;start of video memory
   colour	db	1
-  offset_screenBuffer dd 64000
+  offset_screenBuffer db 64000 dup(0) ; EEN ARRAY!
 
 
 	; /+/+/+/+  DIMENSIONS +/+/+/+/
@@ -560,51 +576,151 @@ DATASEG
 
 	; --- Ball ---
 	ball_x_pos dw 60
-	ball_y_pos dw 60
+	ball_y_pos dw 5
 
 	; /+/+/+/+ SPEEDS +/+/+/+/
   paddle1_speed dw 3
-  ballSpeed dw 3
+  ball_speed dw 6
 
 	; ++++++ TEMP (for testing purposes only) ++++++
 	ball_angle dw 2
 	ball_direction dw 1
 
 
-  ; /+/+/+/+ NUMBERS +/+/+/+/
+  ; /+/+/+/+ SPRITES +/+/+/+/
 
-number0 dw 4, 8
-db  0, 1, 1, 0
-db  1, 0, 0, 1
-db  1, 0, 0, 1
-db  1, 0, 0, 1
-db  1, 0, 0, 1
-db  1, 0, 0, 1
-db  1, 0, 0, 1
-db  0, 1, 1, 0
+  number0 dw 4, 8
+  db  0, 1, 1, 0
+  db  1, 0, 0, 1
+  db  1, 0, 0, 1
+  db  1, 0, 0, 1
+  db  1, 0, 0, 1
+  db  1, 0, 0, 1
+  db  1, 0, 0, 1
+  db  0, 1, 1, 0
 
-number1 dw 4, 8
-db  0, 0, 1, 0
-db  0, 1, 1, 0
-db  1, 0, 1, 0
-db  0, 0, 1, 0
-db  0, 0, 1, 0
-db  0, 0, 1, 0
-db  0, 0, 1, 0
-db  0, 1, 1, 1
+  number1 dw 4, 8
+  db  0, 0, 1, 0
+  db  0, 1, 1, 0
+  db  1, 0, 1, 0
+  db  0, 0, 1, 0
+  db  0, 0, 1, 0
+  db  0, 0, 1, 0
+  db  0, 0, 1, 0
+  db  0, 1, 1, 1
 
-number2 dw 4, 8
-db  0, 1, 1, 0
-db  1, 0, 0, 1
-db  0, 0, 0, 1
-db  0, 0, 1, 0
-db  0, 1, 0, 0
-db  1, 0, 0, 0
-db  1, 0, 0, 0
-db  1, 1, 1, 1
+  number2 dw 4, 8
+  db  0, 1, 1, 0
+  db  1, 0, 0, 1
+  db  0, 0, 0, 1
+  db  0, 0, 1, 0
+  db  0, 1, 0, 0
+  db  1, 0, 0, 0
+  db  1, 0, 0, 0
+  db  1, 1, 1, 1
 
+  number3 dw 4, 8
+  db  0, 1, 1, 0
+  db  1, 0, 0, 1
+  db  0, 0, 0, 1
+  db  0, 1, 1, 0
+  db  0, 0, 1, 1
+  db  0, 0, 0, 1
+  db  1, 0, 0, 1
+  db  0, 1, 1, 0
 
+  number4 dw 4, 8
+  db  0, 0, 0, 1
+  db  0, 0, 1, 1
+  db  0, 1, 0, 1
+  db  1, 0, 0, 1
+  db  1, 1, 1, 1
+  db  0, 0, 0, 1
+  db  0, 0, 0, 1
+  db  0, 0, 0, 1
 
+  number5 dw 4, 8
+  db  1, 1, 1, 1
+  db  1, 0, 0, 0
+  db  1, 0, 0, 0
+  db  1, 1, 1, 0
+  db  1, 0, 0, 1
+  db  0, 0, 0, 1
+  db  1, 0, 0, 1
+  db  0, 1, 1, 0
+
+  number6 dw 4, 8
+  db  0, 0, 1, 1
+  db  0, 1, 0, 0
+  db  1, 0, 0, 0
+  db  1, 0, 0, 0
+  db  1, 1, 1, 0
+  db  1, 0, 0, 1
+  db  1, 0, 0, 1
+  db  0, 1, 1, 0
+
+  number7 dw 4, 8
+  db  1, 1, 1, 1
+  db  1, 0, 0, 1
+  db  0, 0, 1, 0
+  db  0, 0, 1, 0
+  db  0, 1, 0, 0
+  db  0, 1, 0, 0
+  db  1, 0, 0, 0
+  db  1, 0, 0, 0
+
+  number8 dw 4, 8
+  db  0, 1, 1, 0
+  db  1, 0, 0, 1
+  db  1, 0, 0, 1
+  db  0, 1, 1, 0
+  db  1, 0, 0, 1
+  db  1, 0, 0, 1
+  db  1, 0, 0, 1
+  db  0, 1, 1, 0
+
+  number9 dw 4, 8
+  db  0, 1, 1, 0
+  db  1, 0, 0, 1
+  db  1, 0, 0, 1
+  db  0, 1, 1, 1
+  db  0, 0, 0, 1
+  db  0, 0, 0, 1
+  db  1, 0, 0, 1
+  db  0, 1, 1, 0
+
+  crown1 dw 9, 9
+  db  0, 1, 0, 1, 0, 1, 0, 1, 0
+  db  1, 0, 1, 0, 1, 0, 1, 0, 1
+  db  0, 1, 0, 1, 0, 1, 0, 1, 0
+  db  1, 0, 1, 0, 1, 0, 1, 0, 1
+  db  0, 0, 0, 0, 0, 0, 0, 0, 0
+  db  1, 0, 0, 0, 1, 0, 0, 0, 1
+  db  1, 1, 0, 1, 1, 1, 0, 1, 1
+  db  1, 1, 1, 1, 1, 1, 1, 1, 1
+  db  1, 1, 1, 1, 1, 1, 1, 1, 1
+
+  crown2 dw 9, 9
+  db  1, 0, 1, 0, 1, 0, 1, 0, 1
+  db  0, 1, 0, 1, 0, 1, 0, 1, 0
+  db  1, 0, 1, 0, 1, 0, 1, 0, 1
+  db  0, 1, 0, 1, 0, 1, 0, 1, 0
+  db  0, 0, 0, 0, 0, 0, 0, 0, 0
+  db  1, 0, 0, 0, 1, 0, 0, 0, 1
+  db  1, 1, 0, 1, 1, 1, 0, 1, 1
+  db  1, 1, 1, 1, 1, 1, 1, 1, 1
+  db  1, 1, 1, 1, 1, 1, 1, 1, 1
+
+  skull dw 9, 9
+  db  0, 1, 0, 0, 0, 0, 0, 1, 0
+  db  1, 1, 0, 1, 1, 1, 0, 1, 1
+  db  0, 0, 1, 0, 1, 0, 1, 0, 0
+  db  0, 0, 1, 1, 1, 1, 1, 0, 0
+  db  0, 0, 0, 1, 1, 1, 0, 0, 0
+  db  0, 0, 0, 1, 1, 1, 0, 0, 0
+  db  0, 0, 1, 0, 0, 0, 1, 0, 0
+  db  1, 1, 0, 0, 0, 0, 0, 1, 1
+  db  0, 1, 0, 0, 0, 0, 0, 1, 0
 
 
 
