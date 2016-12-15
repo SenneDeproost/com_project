@@ -130,13 +130,15 @@ ENDP updateGameState
 ; +/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+
 
 PROC drawBall
-  ARG @@x_pos:word, @@y_pos:word
-  LOCAL @@x_pos_2:word, @@y_pos_2:word
-  USES eax, ebx, ecx, edx
+  ARG @@x_pos:word, \
+  @@y_pos:word
+  LOCAL @@x_pos_2:word, \
+  @@y_pos_2:word
+  USES eax, ebx, ecx, edx, edi
 
 ; Specs van de ball
-mov cx, [@@x_pos] ; kolom
-mov dx, [@@y_pos] ; rij
+mov cx, [ball_x_pos] ; kolom
+mov dx, [ball_y_pos] ; rij -> WORDT NIET GEMOVED NAAR DX REGISTER
 mov al, 7 ; kleur (7 = white)
 mov ah, 0ch
 
@@ -166,15 +168,16 @@ ret
 ENDP drawBall
 
 PROC moveBall
-	ARG @@ballarg:dword
+	ARG @@y_speed:word, \ ; \ is belangrijk voor meerdere argumenten te gebruiken.
+  @@x_speed:word
 	USES eax, edx
 
 	mov ax, [ball_x_pos]
-	add ax, [ball_speed]
+	add ax, [@@x_speed]
 	mov [ball_x_pos], ax
 
 	mov ax, [ball_y_pos]
-	add ax, 6
+	add ax, [@@y_speed]
 	mov [ball_y_pos], ax
 
 	ret
@@ -258,18 +261,26 @@ ENDP drawPaddle
 
 PROC drawSprite
 ARG @@spritePtr :dword, \
-@@dstPtr :dword, \
 @@x:dword, \
-@@y:dword
+@@y:dword, \
+@@dstPtr :dword
 LOCAL @@w:dword, @@h:dword
+
 USES eax , ebx , ecx , edx , esi , edi
-mov esi , [@@spritePtr ]
+
+;push eax
+;push ebx
+
+lea eax, [@@spritePtr]
+mov ebx, [@@dstPtr]
+
+mov esi , [@@spritePtr]
 xor eax , eax
 lodsw ; read width in AX
 mov [@@w] , eax
 lodsw ; read height in AX
 mov [@@h] , eax
-mov edi , [@@dstPtr ]
+mov edi , [@@dstPtr]
 mov eax , [@@y]
 mov ebx , [SCREENWIDTH]
 mul ebx
@@ -285,6 +296,10 @@ sub edi , [@@w] ; edi now points to the next l ine in ds t
 pop ecx
 dec ecx
 jnz @@drawLine
+
+;pop ebx
+;pop eax
+
 ret
 ENDP drawSprite
 
@@ -373,7 +388,7 @@ PROC handleUserInput
 @@n1:
 	cmp ah, 77	; arrow right
 	jne @@n2
-	call moveBall, 1
+	call moveBall, 1, -10
 	jmp @@no_key_pressed
 @@n2:
 	cmp ah, 75	; arrow left
@@ -497,12 +512,14 @@ call updatePalette, 2
 call drawPaddle, 5, [paddle1_y_pos]
 call drawPaddle, 310, [paddle1_y_pos]
 
+;call drawSprite, [number0], 1, 1, 0a0000h
+
 push eax
 push ebx
-lea eax,[number0]
+lea eax,[skull]
 mov ebx, 0a0000h
 ;;;lea ebx,[offset_screenBuffer]
-call drawSprite, eax,  ebx, 0, 0
+call drawSprite, eax,  ebx, 170, 0
 pop ebx
 pop eax
 
@@ -512,8 +529,12 @@ pop eax
 ;;;rep movsd ; moves a dword and updates ecx , e s i and edi
 
 
-call moveBall, 1
+call moveBall, 1, 2
 call drawBall, [ball_x_pos], [ball_y_pos]
+
+; --- GAME LOGIC ---
+
+
 call waitVBlank
 
 jmp @@gameLoop
@@ -561,6 +582,16 @@ DATASEG
 	; --- Ball ---
 	ball_width dw 3
 
+  ; /+/+/+/+  GAME LOGIC +/+/+/+/
+
+  ; --- Scores ---
+
+  ;P1
+  score1 dw 0
+
+  ;P2
+  score2 dw 0
+
 
 	; /+/+/+/+ POSITIONS +/+/+/+/
 
@@ -572,7 +603,7 @@ DATASEG
 
 	; P2
 	paddle2_x_pos dw 310
-	paddle2_y_pos dw 0
+	paddle2_y_pos dw 10
 
 	; --- Ball ---
 	ball_x_pos dw 60
@@ -588,6 +619,12 @@ DATASEG
 
 
   ; /+/+/+/+ SPRITES +/+/+/+/
+
+  ball dw 4, 4
+  db 1, 1, 1, 1
+  db 1, 1, 1, 1
+  db 1, 1, 1, 1
+  db 1, 1, 1, 1
 
   number0 dw 4, 8
   db  0, 1, 1, 0
