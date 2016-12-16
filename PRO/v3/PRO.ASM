@@ -254,6 +254,115 @@ ret
 
 ENDP drawPaddle
 
+
+; +/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+
+; +------------------- SCORE BOARD -------------------+
+; +/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+
+
+PROC drawScore
+	ARG @@score_value:dword, @@x_pos:word, @@y_pos:dword
+  USES eax, ebx, edx, ecx
+
+mov eax, [@@score_value]
+
+; Compare tests
+cmp eax, 0
+jz @@draw0
+cmp eax, 1
+jz @@draw1
+cmp eax, 2
+jz @@draw2
+cmp eax, 3
+jz @@draw3
+cmp eax, 4
+jz @@draw4
+cmp eax, 5
+jz @@draw5
+cmp eax, 6
+jz @@draw6
+cmp eax, 7
+jz @@draw7
+cmp eax, 8
+jz @@draw8
+cmp eax, 9
+jmp @@draw9
+
+jmp @@end
+
+; Calls to drawSprite
+@@draw0:
+push eax
+lea eax, [number0]
+jmp @@end
+@@draw1:
+push eax
+lea eax, [number1]
+jmp @@end
+@@draw2:
+push eax
+lea eax, [number2]
+jmp @@end
+@@draw3:
+push eax
+lea eax, [number3]
+jmp @@end
+@@draw4:
+push eax
+lea eax, [number4]
+jmp @@end
+@@draw5:
+push eax
+lea eax, [number5]
+jmp @@end
+@@draw6:
+push eax
+lea eax, [number6]
+jmp @@end
+@@draw7:
+push eax
+lea eax, [number7]
+jmp @@end
+@@draw8:
+push eax
+lea eax, [number8]
+jmp @@end
+@@draw9:
+push eax
+lea eax, [number9]
+jmp @@end
+
+@@end:
+call drawSprite, eax, [@@x_pos], [@@y_pos]
+pop eax
+ret
+
+ENDP drawScore
+
+PROC incScore
+ARG @@player
+USES eax
+
+mov eax, [@@player]
+cmp eax,  1
+jz @@p1 ; Naar player 1
+jmp @@p2 ; Anders player 2
+
+@@p1:
+mov eax, [score1]
+inc eax
+mov [score1], eax
+jmp @@end
+
+@@p2:
+mov eax, [score2]
+inc eax
+mov [score2], eax
+jmp @@end
+
+@@end:
+ret
+ENDP incScore
+
 ; +/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+
 ; +---------------------- DRAW SPRITES -----------------------+
 ; +/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+
@@ -262,17 +371,17 @@ ENDP drawPaddle
 PROC drawSprite
 ARG @@spritePtr :dword, \
 @@x:dword, \
-@@y:dword, \
-@@dstPtr :dword
+@@y:dword
+;@@dstPtr :dword
 LOCAL @@w:dword, @@h:dword
 
 USES eax , ebx , ecx , edx , esi , edi
 
-;push eax
-;push ebx
+push eax
+push ebx
 
 lea eax, [@@spritePtr]
-mov ebx, [@@dstPtr]
+mov ebx, 0a0000h
 
 mov esi , [@@spritePtr]
 xor eax , eax
@@ -280,8 +389,8 @@ lodsw ; read width in AX
 mov [@@w] , eax
 lodsw ; read height in AX
 mov [@@h] , eax
-mov edi , [@@dstPtr]
-mov eax , [@@y]
+mov edi , 0a0000h
+mov eax ,0 ;[@@y] ; strange (0 repareert bug voor scores)
 mov ebx , [SCREENWIDTH]
 mul ebx
 add edi , eax
@@ -297,8 +406,8 @@ pop ecx
 dec ecx
 jnz @@drawLine
 
-;pop ebx
-;pop eax
+pop ebx
+pop eax
 
 ret
 ENDP drawSprite
@@ -375,7 +484,7 @@ ENDP rotateBlock
 
 ; Procedure to handle user input
 PROC handleUserInput
-	USES eax
+	USES eax, ebx
 	mov ah, 01h ; function 01h (test key pressed)
 	int 16h		; call keyboard BIOS
 	jz @@no_key_pressed
@@ -393,7 +502,7 @@ PROC handleUserInput
 @@n2:
 	cmp ah, 75	; arrow left
 	jne @@n3
-	call movePaddleDown, -1
+	call incScore, 1
 	jmp @@no_key_pressed
 
 
@@ -512,16 +621,18 @@ call updatePalette, 2
 call drawPaddle, 5, [paddle1_y_pos]
 call drawPaddle, 310, [paddle1_y_pos]
 
-;call drawSprite, [number0], 1, 1, 0a0000h
-
-push eax
-push ebx
-lea eax,[skull]
-mov ebx, 0a0000h
-;;;lea ebx,[offset_screenBuffer]
-call drawSprite, eax,  ebx, 170, 0
-pop ebx
-pop eax
+;push eax
+;mov eax, [number8]
+;mov eax, [majesteit]
+;pop eax
+;--- Draw scores ---
+;push eax
+;lea eax,[majesteit]
+;call drawSprite, eax, 170, 0
+;pop eax
+call incScore, [score1]
+call drawScore, [score1], 145, 0
+call drawScore, [score2], 170, 0
 
 ;;;mov esi, offset offset_screenBuffer ; points to a "db 64000 dup" array
 ;;;mov edi, 0a0000h ; the video memory
@@ -587,10 +698,12 @@ DATASEG
   ; --- Scores ---
 
   ;P1
-  score1 dw 0
+  score1 dd 0
+  ;score_digit1
 
   ;P2
-  score2 dw 0
+  score2 dd 0
+  ;score_digit2
 
 
 	; /+/+/+/+ POSITIONS +/+/+/+/
@@ -617,6 +730,16 @@ DATASEG
 	ball_angle dw 2
 	ball_direction dw 1
 
+
+majesteit dw 4, 8
+db  0, 1, 1, 0
+db  1, 0, 0, 1
+db  1, 0, 0, 1
+db  1, 0, 0, 1
+db  1, 0, 0, 1
+db  1, 0, 0, 1
+db  1, 0, 0, 1
+db  0, 1, 1, 0
 
   ; /+/+/+/+ SPRITES +/+/+/+/
 
