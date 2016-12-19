@@ -106,6 +106,81 @@ PROC exit
 
 ENDP exit
 
+; +/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+
+; +--------------------- COLLISION ---------------------+
+; +/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+
+
+; +++ GLOBAL COLLISION FUNCTION +++
+PROC checkCollision
+USES eax, ebx
+
+;	call checkCollisionLeftPaddle
+;	call checkCollisionRightPaddle
+;	call checkCollisionLeftWall
+;	call checkCollisionRightWall
+;	call checkCollisionTopWall
+	call checkCollisionBottomWall
+  ret
+
+ENDP checkCollision
+
+;+++ BOTTOM +++;
+PROC checkCollisionBottomWall
+  mov ax, 317
+  cmp ax, [ball_y_pos]
+  JGE @@lesser_or_equal1
+@@greater1:
+  JMP @@noCollision
+@@lesser_or_equal1:
+  JMP @@CollisionBottomWall
+
+@@CollisionBottomWall:
+  call mirrorBallAngle
+
+@@noCollision:
+ENDP checkCollisionBottomWall
+
+;+++ TOP +++;
+
+PROC checkCollisionTopWall
+  mov ax, 3
+  cmp ax, [ball_y_pos]
+  JGE @@greater_or_equal1
+@@lesser1:
+  JMP @@noCollision
+@@greater_or_equal1:
+  JMP @@CollisionTopWall
+
+@@CollisionTopWall:
+  call mirrorBallAngle
+
+@@noCollision:
+ENDP checkCollisionTopWall
+
+;+++ ANGLE +++;
+PROC mirrorBallAngle
+
+  mov ax, [ball_angle]
+  neg ax
+  ;hier misschien nog een randomgetal aan toevoegen, om niet in een eindeloze loop te geraken met het spel
+  mov [ball_angle], ax
+  ret
+
+ENDP mirrorBallAngle
+
+;+++ DIRECTION +++;
+PROC mirrorBallDirection
+
+  mov ax, [ball_direction]
+  neg ax
+  mov [ball_direction], ax
+  ret
+
+ENDP mirrorBallDirection
+
+
+
+
 ; +/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+
 ; +-------------------- UPDATE ---------------------+
 ; +/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+
@@ -167,17 +242,16 @@ ret
 
 ENDP drawBall
 
+
 PROC moveBall
-	ARG @@y_speed:word, \ ; \ is belangrijk voor meerdere argumenten te gebruiken.
-  @@x_speed:word
 	USES eax, edx
 
 	mov ax, [ball_x_pos]
-	add ax, [@@x_speed]
+	add ax, [ball_direction]
 	mov [ball_x_pos], ax
 
 	mov ax, [ball_y_pos]
-	add ax, [@@y_speed]
+	add ax, [ball_angle]
 	mov [ball_y_pos], ax
 
 	ret
@@ -617,9 +691,10 @@ call fillBackground, 0
 call drawMidLine
 call updatePalette, 2
 
+call checkCollision
 
 call drawPaddle, 5, [paddle1_y_pos]
-call drawPaddle, 310, [paddle1_y_pos]
+call drawPaddle, 310, [ball_y_pos]
 
 ;push eax
 ;mov eax, [number8]
@@ -630,7 +705,6 @@ call drawPaddle, 310, [paddle1_y_pos]
 ;lea eax,[majesteit]
 ;call drawSprite, eax, 170, 0
 ;pop eax
-call incScore, [score1]
 call drawScore, [score1], 145, 0
 call drawScore, [score2], 170, 0
 
@@ -640,7 +714,7 @@ call drawScore, [score2], 170, 0
 ;;;rep movsd ; moves a dword and updates ecx , e s i and edi
 
 
-call moveBall, 1, 2
+call moveBall, [ball_direction], [ball_angle]
 call drawBall, [ball_x_pos], [ball_y_pos]
 
 ; --- GAME LOGIC ---
@@ -719,8 +793,8 @@ DATASEG
 	paddle2_y_pos dw 10
 
 	; --- Ball ---
-	ball_x_pos dw 60
-	ball_y_pos dw 5
+	ball_x_pos dw 10
+	ball_y_pos dw 100
 
 	; /+/+/+/+ SPEEDS +/+/+/+/
   paddle1_speed dw 3
