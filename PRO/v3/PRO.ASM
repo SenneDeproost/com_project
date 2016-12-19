@@ -114,48 +114,89 @@ ENDP exit
 PROC checkCollision
 USES eax, ebx
 
-;	call checkCollisionLeftPaddle
-;	call checkCollisionRightPaddle
+	call checkCollisionLeftPaddle
+	call checkCollisionRightPaddle
 ;	call checkCollisionLeftWall
 ;	call checkCollisionRightWall
-;	call checkCollisionTopWall
-	call checkCollisionBottomWall
+	;call checkCollisionTopWall
+	;call checkCollisionBottomWall
   ret
 
 ENDP checkCollision
 
 ;+++ BOTTOM +++;
 PROC checkCollisionBottomWall
-  mov ax, 317
+  mov ax, 197 ; HEIGHT - 3
   cmp ax, [ball_y_pos]
-  JGE @@lesser_or_equal1
+  JLE @@less_or_equal1
 @@greater1:
   JMP @@noCollision
-@@lesser_or_equal1:
+@@less_or_equal1:
   JMP @@CollisionBottomWall
 
 @@CollisionBottomWall:
   call mirrorBallAngle
 
 @@noCollision:
+ret
+
 ENDP checkCollisionBottomWall
 
 ;+++ TOP +++;
-
 PROC checkCollisionTopWall
   mov ax, 3
   cmp ax, [ball_y_pos]
-  JGE @@greater_or_equal1
+  JLE @@less_or_equal1
 @@lesser1:
   JMP @@noCollision
-@@greater_or_equal1:
+@@less_or_equal1:
   JMP @@CollisionTopWall
 
 @@CollisionTopWall:
   call mirrorBallAngle
 
 @@noCollision:
+ret
+
 ENDP checkCollisionTopWall
+
+
+;+++ PADDLE 1 +++
+PROC checkCollisionLeftPaddle
+USES eax, ebx
+
+  mov ax, [ball_x_pos]
+  cmp ax, [paddle1_x_pos]
+  jle @@CollisionLeftPaddle
+  jmp @@noCollision
+
+@@CollisionLeftPaddle:
+  call mirrorBallAngle
+  call mirrorBallDirection
+
+@@noCollision:
+ret
+
+ENDP checkCollisionLeftPaddle
+
+
+;+++ PADDLE 2 +++
+PROC checkCollisionRightPaddle
+USES eax, ebx
+
+  mov ax, [ball_x_pos]
+  cmp ax, [paddle2_x_pos]
+  jge @@CollisionRightPaddle
+  jmp @@noCollision
+
+@@CollisionRightPaddle:
+  call mirrorBallAngle
+  call mirrorBallDirection
+
+@@noCollision:
+ret
+
+ENDP checkCollisionRightPaddle
 
 ;+++ ANGLE +++;
 PROC mirrorBallAngle
@@ -785,7 +826,7 @@ DATASEG
 	; --- Paddle ---
 
 	; P1
-  paddle1_x_pos dw 100
+  paddle1_x_pos dw 5
 	paddle1_y_pos dw 100
 
 	; P2
@@ -793,7 +834,7 @@ DATASEG
 	paddle2_y_pos dw 10
 
 	; --- Ball ---
-	ball_x_pos dw 10
+	ball_x_pos dw 200
 	ball_y_pos dw 100
 
 	; /+/+/+/+ SPEEDS +/+/+/+/
@@ -801,8 +842,8 @@ DATASEG
   ball_speed dw 6
 
 	; ++++++ TEMP (for testing purposes only) ++++++
-	ball_angle dw 2
-	ball_direction dw 1
+	ball_angle dw 0
+	ball_direction dw -1
 
 
 majesteit dw 4, 8
