@@ -455,6 +455,52 @@ ret
 ENDP drawPaddle
 
 
+;+++ PADDLE AI +++
+PROC movePaddle2
+USES eax, ebx
+
+mov ax, [paddle2_y_pos]
+mov bx, [ball_y_pos]
+cmp ax, bx
+jge @@moveDown
+@@moveUp:
+sub ax, [ball_angle]
+inc ax
+jmp @@end
+@@moveDown:
+add ax, [ball_angle]
+dec ax
+
+
+@@end:
+mov [paddle2_y_pos], ax
+ret
+
+
+ENDP movePaddle2
+
+PROC movePaddle1
+USES eax, ebx
+
+mov ax, [paddle1_y_pos]
+mov bx, [ball_y_pos]
+cmp ax, bx
+jge @@moveDown
+@@moveUp:
+sub ax, [ball_angle]
+inc ax
+jmp @@end
+@@moveDown:
+add ax, [ball_angle]
+dec ax
+
+
+@@end:
+mov [paddle1_y_pos], ax
+ret
+ENDP movePaddle1
+
+
 ; +/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+
 ; +------------------- SCORE BOARD -------------------+
 ; +/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+/+
@@ -466,6 +512,8 @@ PROC drawScore
 mov eax, [@@score_value]
 
 ; Compare tests
+cmp eax, -1
+jz @@drawSkull
 cmp eax, 0
 jz @@draw0
 cmp eax, 1
@@ -486,10 +534,16 @@ cmp eax, 8
 jz @@draw8
 cmp eax, 9
 jmp @@draw9
+cmp eax, 10
+jmp @@drawCrown
 
 jmp @@end
 
 ; Calls to drawSprite
+@@drawSkull:
+push eax
+lea eax, [skull]
+jmp @@end
 @@draw0:
 push eax
 lea eax, [number0]
@@ -529,6 +583,10 @@ jmp @@end
 @@draw9:
 push eax
 lea eax, [number9]
+jmp @@end
+@@drawCrown:
+push eax
+lea eax, [crown1]
 jmp @@end
 
 @@end:
@@ -839,13 +897,22 @@ call drawScore, [score2], 170, 0
 ;;;mov ecx, 64000 / 4 ; 320 * 200 , but copy groups four bytes
 ;;;rep movsd ; moves a dword and updates ecx , e s i and edi
 
+;call movePaddle1
+call movePaddle2
 
 call moveBall, [ball_direction], [ball_angle]
 call drawBall, [ball_x_pos], [ball_y_pos]
 
 ; --- GAME LOGIC ---
 
+;cmp [score2], 10
+;jz @@no_winner
+;call drawSprite, [skull], 145, 0
 
+
+
+
+@@no_winner:
 call waitVBlank
 
 jmp @@gameLoop
@@ -929,17 +996,6 @@ DATASEG
 	; ++++++ TEMP (for testing purposes only) ++++++
 	ball_angle dw 1
 	ball_direction dw -1
-
-
-majesteit dw 4, 8
-db  0, 1, 1, 0
-db  1, 0, 0, 1
-db  1, 0, 0, 1
-db  1, 0, 0, 1
-db  1, 0, 0, 1
-db  1, 0, 0, 1
-db  1, 0, 0, 1
-db  0, 1, 1, 0
 
   ; /+/+/+/+ SPRITES +/+/+/+/
 
