@@ -190,6 +190,45 @@ JMP @@noCollision
 JMP @@CollisionLeftPaddle
 
 @@CollisionLeftPaddle:
+
+  ;3 sections, 0-5, 6-20, 21-25
+  mov ax, [ball_angle]
+  mov bx, [ball_y_pos]
+  mov cx, [paddle1_y_pos]
+
+  add cx, 5   ;nu is cx = paddle2_y_pos + 5
+  cmp bx, cx
+  JLE @@sixToTwentyfive
+
+@@zeroToFive:
+  cmp ax, 2   ;2 = maximum waarde voor ball_angle
+  JGE @@noChange
+
+@@changePos:
+  inc ax
+  mov [ball_angle], ax
+  call mirrorBallAngle
+  jmp @@noChange
+
+@@sixToTwentyfive:
+  add cx, 15   ;nu is cx = paddle2_y_pos + 20
+  cmp bx, cx
+  JLE @@sixToTwenty
+
+@@twentyOneToTwentyFive:
+  cmp ax, -2   ;-2 = minimum waarde voor ball_angle
+  JLE @@noChange
+
+@@changeNeg:
+  dec ax
+  mov [ball_angle], ax
+  call mirrorBallAngle
+  jmp @@noChange
+
+
+@@sixToTwenty: ;geen verandering, dus gelijk aan @@noChange:
+@@noChange:
+
   call mirrorBallAngle
   call mirrorBallDirection
 
@@ -230,6 +269,44 @@ JMP @@CollisionRightPaddle
 
 
 @@CollisionRightPaddle:
+  ;3 sections, 0-5, 6-20, 21-25
+  mov ax, [ball_angle]
+  mov bx, [ball_y_pos]
+  mov cx, [paddle2_y_pos]
+
+  add cx, 5   ;nu is cx = paddle2_y_pos + 5
+  cmp bx, cx
+  JLE @@sixToTwentyfive
+
+@@zeroToFive:
+  cmp ax, -2   ;2 = maximum waarde voor ball_angle
+  JLE @@noChange
+
+@@changeNeg:
+  dec ax
+  mov [ball_angle], ax
+  call mirrorBallAngle
+  jmp @@noChange
+
+@@sixToTwentyfive:
+  add cx, 15   ;nu is cx = paddle2_y_pos + 20
+  cmp bx, cx
+  JLE @@sixToTwenty
+
+@@twentyOneToTwentyFive:
+  cmp ax, 2   ;-2 = minimum waarde voor ball_angle
+  JGE @@noChange
+
+@@changePos:
+  inc ax
+  mov [ball_angle], ax
+  call mirrorBallAngle
+  jmp @@noChange
+
+
+@@sixToTwenty: ;geen verandering, dus gelijk aan @@noChange:
+@@noChange:
+
   call mirrorBallAngle
   call mirrorBallDirection
 
@@ -461,16 +538,34 @@ USES eax, ebx
 
 mov ax, [paddle2_y_pos]
 mov bx, [ball_y_pos]
+
+; Controle of de paddle niet buiten scherm dreigt te gaan.
+cmp ax, 0
+JLE @@increment
+cmp ax, 175
+JGE @@decrement
+
 cmp ax, bx
-jge @@moveDown
-@@moveUp:
-sub ax, [ball_angle]
+jge @@moveUp
+@@moveDown:
+add ax, 1;[ball_angle]
+inc ax ;MOGELIJK TE WINNEN
 inc ax
 jmp @@end
-@@moveDown:
-add ax, [ball_angle]
+@@moveUp:
+add ax, -1 ;[ball_angle]
+inc ax ;MOGELIJK TE WINNEN
 dec ax
+jmp @@end
 
+
+@@decrement:
+dec ax
+jmp @@end
+
+
+@@increment:
+inc ax
 
 @@end:
 mov [paddle2_y_pos], ax
@@ -701,8 +796,8 @@ PROC movePaddleUp
   mov ax, [paddle1_y_pos]
 
   ; Test voor bovenste rand.
-  cmp ax, 0
-  jz @@last
+  cmp ax, 6
+  jle @@last
   add ax, [speed]
   mov [paddle1_y_pos], ax
 
@@ -720,8 +815,8 @@ PROC movePaddleDown
   mov ax, [paddle1_y_pos]
 
   ; Test voor onderste rand.
-  cmp ax, 176 ; Opletten of deze paddle wel op deze plek komen.
-  jz @@last
+  cmp ax, 172 ; Opletten of deze paddle wel op deze plek komen.
+  jge @@last
   add ax, [speed]
   mov [paddle1_y_pos], ax
 
@@ -767,12 +862,12 @@ PROC handleUserInput
 @@n3:
 	cmp ah, 80	; arrow down
 	jne @@n4
-	call movePaddleDown, 4
+	call movePaddleDown, 8
 	jmp @@no_key_pressed
 @@n4:
 	cmp ah, 72	; arrow up
 	jne @@n5
-	call movePaddleUp, -4
+	call movePaddleUp, -8
 
 	jmp @@no_key_pressed
 @@n5:
@@ -995,7 +1090,7 @@ DATASEG
 
 	; ++++++ TEMP (for testing purposes only) ++++++
 	ball_angle dw 1
-	ball_direction dw -1
+	ball_direction dw 3
 
   ; /+/+/+/+ SPRITES +/+/+/+/
 
