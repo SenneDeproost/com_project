@@ -118,8 +118,8 @@ USES eax, ebx
 	call checkCollisionRightPaddle
 ;	call checkCollisionLeftWall
 ;	call checkCollisionRightWall
-	;call checkCollisionTopWall
-	;call checkCollisionBottomWall
+ call checkCollisionTopWall
+ call checkCollisionBottomWall
   ret
 
 ENDP checkCollision
@@ -146,7 +146,7 @@ ENDP checkCollisionBottomWall
 PROC checkCollisionTopWall
   mov ax, 3
   cmp ax, [ball_y_pos]
-  JLE @@less_or_equal1
+  JgE @@less_or_equal1
 @@lesser1:
   JMP @@noCollision
 @@less_or_equal1:
@@ -165,10 +165,29 @@ ENDP checkCollisionTopWall
 PROC checkCollisionLeftPaddle
 USES eax, ebx
 
-  mov ax, [ball_x_pos]
-  cmp ax, [paddle1_x_pos]
-  jle @@CollisionLeftPaddle
-  jmp @@noCollision
+mov ax, [paddle1_x_pos]
+add ax, [paddle_width]
+cmp ax, [ball_x_pos]
+JGE @@greater_or_equal1
+@@lesser1:
+JMP @@noCollision
+@@greater_or_equal1:
+mov ax, [ball_y_pos]
+mov bx, [paddle1_y_pos]
+add bx, 3    ;ball_width
+cmp ax, bx
+JGE @@greater_or_equal2
+@@lesser2:
+JMP @@noCollision
+@@greater_or_equal2:
+mov bx, [paddle1_y_pos]
+add bx, [paddle_heigth]
+cmp ax, bx
+JLE @@lesser_or_equal3
+@@greater3:
+JMP @@noCollision
+@@lesser_or_equal3:
+JMP @@CollisionLeftPaddle
 
 @@CollisionLeftPaddle:
   call mirrorBallAngle
@@ -842,7 +861,7 @@ DATASEG
   ball_speed dw 6
 
 	; ++++++ TEMP (for testing purposes only) ++++++
-	ball_angle dw 0
+	ball_angle dw -1
 	ball_direction dw -1
 
 
