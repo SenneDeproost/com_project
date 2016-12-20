@@ -114,10 +114,10 @@ ENDP exit
 PROC checkCollision
 USES eax, ebx
 
-	call checkCollisionLeftPaddle
-	call checkCollisionRightPaddle
-;	call checkCollisionLeftWall
-;	call checkCollisionRightWall
+ call checkCollisionLeftPaddle
+ call checkCollisionRightPaddle
+ call checkCollisionLeftWall
+ call checkCollisionRightWall
  call checkCollisionTopWall
  call checkCollisionBottomWall
   ret
@@ -146,7 +146,7 @@ ENDP checkCollisionBottomWall
 PROC checkCollisionTopWall
   mov ax, 3
   cmp ax, [ball_y_pos]
-  JgE @@less_or_equal1
+  JGE @@less_or_equal1
 @@lesser1:
   JMP @@noCollision
 @@less_or_equal1:
@@ -203,10 +203,31 @@ ENDP checkCollisionLeftPaddle
 PROC checkCollisionRightPaddle
 USES eax, ebx
 
-  mov ax, [ball_x_pos]
-  cmp ax, [paddle2_x_pos]
-  jge @@CollisionRightPaddle
-  jmp @@noCollision
+mov ax, [paddle2_x_pos]
+sub ax, [paddle_width] ; !!
+cmp ax, [ball_x_pos]
+JLE @@greater_or_equal1
+@@lesser1:
+JMP @@noCollision
+@@greater_or_equal1:
+mov ax, [ball_y_pos]
+mov bx, [paddle2_y_pos]
+add ax, 3    ;ball_width
+cmp ax, bx
+JGE @@greater_or_equal2
+@@lesser2:
+JMP @@noCollision
+@@greater_or_equal2:
+mov bx, [paddle2_y_pos]
+add bx, [paddle_heigth]
+cmp ax, bx
+JLE @@lesser_or_equal3
+@@greater3:
+JMP @@noCollision
+@@lesser_or_equal3:
+JMP @@CollisionRightPaddle
+
+
 
 @@CollisionRightPaddle:
   call mirrorBallAngle
@@ -216,6 +237,51 @@ USES eax, ebx
 ret
 
 ENDP checkCollisionRightPaddle
+
+
+; +++ LEFT +++
+PROC checkCollisionLeftWall
+	mov ax, 0
+  cmp ax, [ball_x_pos]
+  JGE @@greater_or_equal1
+@@lesser1:
+  JMP @@noCollision
+@@greater_or_equal1:
+  JMP @@CollisionLeftWall
+
+@@CollisionLeftWall:
+  inc [score2]   ; Verhoog de score van player 2.
+  mov [ball_x_pos], 148 ; Zet bal in het midden van het veld.
+  mov [ball_y_pos], 98
+
+@@noCollision:
+ret
+
+ENDP checkCollisionLeftWall
+
+
+; +++ RIGHT +++
+PROC checkCollisionRightWall
+	mov ax, 320
+  cmp ax, [ball_x_pos]
+  JLE @@greater_or_equal1
+@@lesser1:
+  JMP @@noCollision
+@@greater_or_equal1:
+  JMP @@CollisionRightWall
+
+@@CollisionRightWall:
+  inc [score1]          ; Verhoog de score van player 2.
+  mov [ball_x_pos], 148 ; Zet bal in het midden van het veld.
+  mov [ball_y_pos], 98
+
+@@noCollision:
+ret
+
+ENDP checkCollisionRightWall
+
+
+
 
 ;+++ ANGLE +++;
 PROC mirrorBallAngle
@@ -754,7 +820,7 @@ call updatePalette, 2
 call checkCollision
 
 call drawPaddle, 5, [paddle1_y_pos]
-call drawPaddle, 310, [ball_y_pos]
+call drawPaddle, 310, [paddle2_y_pos]
 
 ;push eax
 ;mov eax, [number8]
@@ -850,7 +916,7 @@ DATASEG
 
 	; P2
 	paddle2_x_pos dw 310
-	paddle2_y_pos dw 10
+	paddle2_y_pos dw 120
 
 	; --- Ball ---
 	ball_x_pos dw 200
@@ -861,7 +927,7 @@ DATASEG
   ball_speed dw 6
 
 	; ++++++ TEMP (for testing purposes only) ++++++
-	ball_angle dw -1
+	ball_angle dw 1
 	ball_direction dw -1
 
 
