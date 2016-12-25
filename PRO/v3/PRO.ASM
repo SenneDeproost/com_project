@@ -147,7 +147,7 @@ PROC checkCollisionTopWall
   mov ax, 3
   cmp ax, [ball_y_pos]
   JGE @@less_or_equal1
-@@lesser1:
+@@less1:
   JMP @@noCollision
 @@less_or_equal1:
   JMP @@CollisionTopWall
@@ -165,153 +165,264 @@ ENDP checkCollisionTopWall
 PROC checkCollisionLeftPaddle
 USES eax, ebx
 
-mov ax, [paddle1_x_pos]
-add ax, [paddle_width]
-cmp ax, [ball_x_pos]
-JGE @@greater_or_equal1
-@@lesser1:
-JMP @@noCollision
+  mov ax, [paddle1_x_pos]
+  add ax, [paddle_width]
+  dec ax
+  cmp ax, [ball_x_pos]
+  JGE @@greater_or_equal1
+
+@@less1:
+  JMP @@noCollision
+
 @@greater_or_equal1:
-mov ax, [ball_y_pos]
-mov bx, [paddle1_y_pos]
-add bx, 3    ;ball_width
-cmp ax, bx
-JGE @@greater_or_equal2
-@@lesser2:
-JMP @@noCollision
+  mov ax, [ball_y_pos]
+  inc ax
+  mov bx, [paddle1_y_pos]
+  add bx, [ball_width]
+  cmp ax, bx
+  JGE @@greater_or_equal2
+
+@@less2:
+  JMP @@noCollision
+
 @@greater_or_equal2:
-mov bx, [paddle1_y_pos]
-add bx, [paddle_heigth]
-cmp ax, bx
-JLE @@lesser_or_equal3
+  mov bx, [paddle1_y_pos]
+  add bx, [paddle_heigth]
+  cmp ax, bx
+  JLE @@less_or_equal3
+
 @@greater3:
-JMP @@noCollision
-@@lesser_or_equal3:
-JMP @@CollisionLeftPaddle
+  JMP @@noCollision
+
+@@less_or_equal3:
+  JMP @@CollisionLeftPaddle
+
 
 @@CollisionLeftPaddle:
 
+  call mirrorBallDirection
   ;3 sections, 0-5, 6-20, 21-25
   mov ax, [ball_angle]
   mov bx, [ball_y_pos]
   mov cx, [paddle1_y_pos]
 
-  add cx, 5   ;nu is cx = paddle2_y_pos + 5
+  add cx, 5   ;nu is cx = paddle1_y_pos + 5
   cmp bx, cx
   JLE @@sixToTwentyfive
 
-@@zeroToFive:
-  cmp ax, 2   ;2 = maximum waarde voor ball_angle
-  JGE @@noChange
+  @@zeroToFive:
+    ;als ax = -2 --> 2
+    ;als ax = -1 --> 2
+    ;als ax = 0 --> 1
+    ;als ax = 1 --> 0
+    ;als ax = 2 --> -1
+    cmp ax, -2
+    jl @@outOfRange
+    cmp ax, 2
+    jg @@outOfRange
 
-@@changePos:
-  inc ax
-  mov [ball_angle], ax
-  call mirrorBallAngle
-  jmp @@noChange
-
-@@sixToTwentyfive:
-  add cx, 15   ;nu is cx = paddle2_y_pos + 20
-  cmp bx, cx
-  JLE @@sixToTwenty
-
-@@twentyOneToTwentyFive:
-  cmp ax, -2   ;-2 = minimum waarde voor ball_angle
-  JLE @@noChange
-
-@@changeNeg:
-  dec ax
-  mov [ball_angle], ax
-  call mirrorBallAngle
-  jmp @@noChange
+    cmp ax, -1
+    jge @@mirrorAndAddOne
 
 
-@@sixToTwenty: ;geen verandering, dus gelijk aan @@noChange:
-@@noChange:
+    @@mirrorAndAddOne:
+      call mirrorBallAngle
+      mov ax, [ball_angle]
+      inc ax
+      mov [ball_angle], ax
+      jmp @@noChange
 
-  call mirrorBallAngle
-  call mirrorBallDirection
 
-@@noCollision:
-ret
+
+  @@sixToTwentyfive:
+    add cx, 15   ;nu is cx = paddle2_y_pos + 20
+    cmp bx, cx
+    JLE @@sixToTwenty
+
+  @@twentyOneToTwentyFive:
+    ;als ax = -2 --> 1
+    ;als ax = -1 --> 0
+    ;als ax = 0 --> -1
+    ;als ax = 1 --> -2
+    ;als ax = 2 --> -2
+    cmp ax, -2   ;-2 = minimum waarde voor ball_angle
+    jl @@outOfRange
+    cmp ax, 2
+    jg @@outOfRange
+
+
+    cmp ax, 1
+    jle @@mirrorAndDecOne
+
+
+    @@mirrorAndDecOne:
+      call mirrorBallAngle
+      mov ax, [ball_angle]
+      dec ax
+      mov [ball_angle], ax
+      jmp @@noChange
+
+
+  @@sixToTwenty:
+    ;als ax = -2 --> 2
+    ;als ax = -1 --> 1
+    ;als ax = 0 --> 0
+    ;als ax = 1 --> -1
+    ;als ax = 2 --> -2
+    cmp ax, -2   ;-2 = minimum waarde voor ball_angle
+    jl @@outOfRange
+    cmp ax, 2
+    jg @@outOfRange
+
+
+      call mirrorBallAngle
+      jmp @@noChange
+
+
+  @@outOfRange:
+    mov [ball_angle], 0
+    jmp @@noChange
+
+  @@mirror:
+    call mirrorBallAngle
+    jmp @@noChange
+
+  @@noChange:
+
+  @@noCollision:
+  ret
 
 ENDP checkCollisionLeftPaddle
 
 
 ;+++ PADDLE 2 +++
 PROC checkCollisionRightPaddle
-USES eax, ebx
+  USES eax, ebx
 
-mov ax, [paddle2_x_pos]
-sub ax, [paddle_width] ; !!
-cmp ax, [ball_x_pos]
-JLE @@greater_or_equal1
-@@lesser1:
-JMP @@noCollision
-@@greater_or_equal1:
-mov ax, [ball_y_pos]
-mov bx, [paddle2_y_pos]
-add ax, 3    ;ball_width
-cmp ax, bx
-JGE @@greater_or_equal2
-@@lesser2:
-JMP @@noCollision
-@@greater_or_equal2:
-mov bx, [paddle2_y_pos]
-add bx, [paddle_heigth]
-cmp ax, bx
-JLE @@lesser_or_equal3
-@@greater3:
-JMP @@noCollision
-@@lesser_or_equal3:
-JMP @@CollisionRightPaddle
-
-
-
-@@CollisionRightPaddle:
-  ;3 sections, 0-5, 6-20, 21-25
-  mov ax, [ball_angle]
-  mov bx, [ball_y_pos]
-  mov cx, [paddle2_y_pos]
-
-  add cx, 5   ;nu is cx = paddle2_y_pos + 5
-  cmp bx, cx
-  JLE @@sixToTwentyfive
-
-@@zeroToFive:
-  cmp ax, -2   ;2 = maximum waarde voor ball_angle
-  JLE @@noChange
-
-@@changeNeg:
-  dec ax
-  mov [ball_angle], ax
-  call mirrorBallAngle
-  jmp @@noChange
-
-@@sixToTwentyfive:
-  add cx, 15   ;nu is cx = paddle2_y_pos + 20
-  cmp bx, cx
-  JLE @@sixToTwenty
-
-@@twentyOneToTwentyFive:
-  cmp ax, 2   ;-2 = minimum waarde voor ball_angle
-  JGE @@noChange
-
-@@changePos:
+  mov ax, [paddle2_x_pos]
+  sub ax, [paddle_width]
   inc ax
-  mov [ball_angle], ax
-  call mirrorBallAngle
-  jmp @@noChange
+  cmp ax, [ball_x_pos]
+  JLE @@less_or_equal1
+
+  @@greater1:
+    JMP @@noCollision
+
+  @@less_or_equal1:
+    mov ax, [ball_y_pos]
+    inc ax
+    mov bx, [paddle2_y_pos]
+    add ax, 3    ;ball_width
+    cmp ax, bx
+    JGE @@greater_or_equal2
+
+  @@less2:
+    JMP @@noCollision
+
+  @@greater_or_equal2:
+    mov bx, [paddle2_y_pos]
+    add bx, [paddle_heigth]
+    cmp ax, bx
+    JLE @@less_or_equal3
+
+  @@greater3:
+    JMP @@noCollision
+
+  @@less_or_equal3:
+    JMP @@CollisionRightPaddle
 
 
-@@sixToTwenty: ;geen verandering, dus gelijk aan @@noChange:
-@@noChange:
+  @@CollisionRightPaddle:
 
-  call mirrorBallAngle
-  call mirrorBallDirection
+    call mirrorBallDirection
+    ;3 sections, 0-5, 6-20, 21-25
+    mov ax, [ball_angle]
+    mov bx, [ball_y_pos]
+    mov cx, [paddle2_y_pos]
 
-@@noCollision:
-ret
+    add cx, 5   ;nu is cx = paddle2_y_pos + 5
+    cmp bx, cx
+    JLE @@sixToTwentyfive
+
+  @@zeroToFive:
+    ;als ax = -2 --> 1
+    ;als ax = -1 --> 0
+    ;als ax = 0 --> -1
+    ;als ax = 1 --> -2
+    ;als ax = 2 --> -2
+    cmp ax, -2   ;-2 = minimum waarde voor ball_angle
+    jl @@outOfRange
+    cmp ax, 2
+    jg @@outOfRange
+
+
+    cmp ax, 1
+    jle @@mirrorAndDecOne
+
+
+    @@mirrorAndDecOne:
+      call mirrorBallAngle
+      mov ax, [ball_angle]
+      dec ax
+      mov [ball_angle], ax
+      jmp @@noChange
+
+  @@sixToTwentyfive:
+    add cx, 15   ;nu is cx = paddle2_y_pos + 20
+    cmp bx, cx
+    JLE @@sixToTwenty
+
+  @@twentyOneToTwentyFive:
+    ;als ax = -2 --> 2
+    ;als ax = -1 --> 2
+    ;als ax = 0 --> 1
+    ;als ax = 1 --> 0
+    ;als ax = 2 --> -1
+    cmp ax, -2
+    jl @@outOfRange
+    cmp ax, 2
+    jg @@outOfRange
+
+    cmp ax, -1
+    jge @@mirrorAndAddOne
+
+
+    @@mirrorAndAddOne:
+      call mirrorBallAngle
+      mov ax, [ball_angle]
+      inc ax
+      mov [ball_angle], ax
+      jmp @@noChange
+
+
+  @@sixToTwenty:
+    ;als ax = -2 --> 2
+    ;als ax = -1 --> 1
+    ;als ax = 0 --> 0
+    ;als ax = 1 --> -1
+    ;als ax = 2 --> -2
+    cmp ax, -2   ;-2 = minimum waarde voor ball_angle
+    jl @@outOfRange
+    cmp ax, 2
+    jg @@outOfRange
+
+
+      call mirrorBallAngle
+      jmp @@noChange
+
+
+  @@outOfRange:
+    mov [ball_angle], 0
+    jmp @@noChange
+
+  @@mirror:
+    call mirrorBallAngle
+    jmp @@noChange
+
+  @@noChange:
+
+  @@noCollision:
+  ret
 
 ENDP checkCollisionRightPaddle
 
@@ -321,7 +432,7 @@ PROC checkCollisionLeftWall
 	mov ax, 0
   cmp ax, [ball_x_pos]
   JGE @@greater_or_equal1
-@@lesser1:
+@@less1:
   JMP @@noCollision
 @@greater_or_equal1:
   JMP @@CollisionLeftWall
@@ -342,7 +453,7 @@ PROC checkCollisionRightWall
 	mov ax, 320
   cmp ax, [ball_x_pos]
   JLE @@greater_or_equal1
-@@lesser1:
+@@less1:
   JMP @@noCollision
 @@greater_or_equal1:
   JMP @@CollisionRightWall
@@ -548,12 +659,12 @@ JGE @@decrement
 cmp ax, bx
 jge @@moveUp
 @@moveDown:
-add ax, 1;[ball_angle]
+add ax, 2;[ball_angle]
 inc ax ;MOGELIJK TE WINNEN
 inc ax
 jmp @@end
 @@moveUp:
-add ax, -1 ;[ball_angle]
+add ax, -2 ;[ball_angle]
 inc ax ;MOGELIJK TE WINNEN
 dec ax
 jmp @@end
