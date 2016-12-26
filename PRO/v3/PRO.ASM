@@ -441,6 +441,7 @@ PROC checkCollisionLeftWall
   inc [score2]   ; Verhoog de score van player 2.
   mov [ball_x_pos], 148 ; Zet bal in het midden van het veld.
   mov [ball_y_pos], 98
+  mov [ball_angle], 0
 
 @@noCollision:
 ret
@@ -462,6 +463,7 @@ PROC checkCollisionRightWall
   inc [score1]          ; Verhoog de score van player 2.
   mov [ball_x_pos], 148 ; Zet bal in het midden van het veld.
   mov [ball_y_pos], 98
+  mov [ball_angle], 0
 
 @@noCollision:
 ret
@@ -659,14 +661,14 @@ JGE @@decrement
 cmp ax, bx
 jge @@moveUp
 @@moveDown:
-add ax, 2;[ball_angle]
-inc ax ;MOGELIJK TE WINNEN
+add ax, [paddle2_speed]
+inc ax
 inc ax
 jmp @@end
 @@moveUp:
-add ax, -2 ;[ball_angle]
-inc ax ;MOGELIJK TE WINNEN
-dec ax
+mov bx, [paddle2_speed]
+neg bx
+add ax, bx
 jmp @@end
 
 
@@ -677,6 +679,7 @@ jmp @@end
 
 @@increment:
 inc ax
+jmp @@end
 
 @@end:
 mov [paddle2_y_pos], ax
@@ -739,7 +742,7 @@ jz @@draw7
 cmp eax, 8
 jz @@draw8
 cmp eax, 9
-jmp @@draw9
+jz @@draw9
 cmp eax, 10
 jmp @@drawCrown
 
@@ -845,7 +848,7 @@ push eax
 push ebx
 
 lea eax, [@@spritePtr]
-mov ebx, 0a0000h
+mov ebx, [startaddr]
 
 mov esi , [@@spritePtr]
 xor eax , eax
@@ -853,7 +856,7 @@ lodsw ; read width in AX
 mov [@@w] , eax
 lodsw ; read height in AX
 mov [@@h] , eax
-mov edi , 0a0000h
+mov edi , [startaddr]
 mov eax ,0 ;[@@y] ; strange (0 repareert bug voor scores)
 mov ebx , [SCREENWIDTH]
 mul ebx
@@ -899,7 +902,7 @@ PROC waitVBlank
 ENDP waitVBlank
 
 PROC movePaddleUp
-	ARG @@speed:dword
+	ARG @@speed:word
 	USES eax, edx
 
   ; Verander de positie van paddle1
@@ -909,7 +912,7 @@ PROC movePaddleUp
   ; Test voor bovenste rand.
   cmp ax, 6
   jle @@last
-  add ax, [speed]
+  add ax, [@@speed]
   mov [paddle1_y_pos], ax
 
   @@last:
@@ -918,7 +921,7 @@ PROC movePaddleUp
 ENDP movePaddleUp
 
 PROC movePaddleDown
-	ARG @@speed:dword
+	ARG @@speed:word
 	USES eax, edx
 
   ; Verander de positie van paddle1
@@ -928,7 +931,7 @@ PROC movePaddleDown
   ; Test voor onderste rand.
   cmp ax, 172 ; Opletten of deze paddle wel op deze plek komen.
   jge @@last
-  add ax, [speed]
+  add ax, [@@speed]
   mov [paddle1_y_pos], ax
 
   @@last:
@@ -937,14 +940,7 @@ PROC movePaddleDown
 ENDP movePaddleDown
 
 
-PROC rotateBlock
-ARG speed:word
-	USES eax, edx
 
-
-
-	ret
-ENDP rotateBlock
 
 ; Procedure to handle user input
 PROC handleUserInput
@@ -961,7 +957,7 @@ PROC handleUserInput
 @@n1:
 	cmp ah, 77	; arrow right
 	jne @@n2
-	call moveBall, 1, -10
+	;call moveBall, 1, -10
 	jmp @@no_key_pressed
 @@n2:
 	cmp ah, 75	; arrow left
@@ -973,12 +969,14 @@ PROC handleUserInput
 @@n3:
 	cmp ah, 80	; arrow down
 	jne @@n4
-	call movePaddleDown, 8
+	call movePaddleDown, [paddle1_speed]
 	jmp @@no_key_pressed
 @@n4:
 	cmp ah, 72	; arrow up
 	jne @@n5
-	call movePaddleUp, -8
+  mov bx, [paddle1_speed]
+  neg bx
+	call movePaddleUp, bx
 
 	jmp @@no_key_pressed
 @@n5:
@@ -1000,7 +998,12 @@ ENDP handleUserInput
 
 PROC drawObjects
 
+call drawPaddle, 5, [paddle1_y_pos]
+call drawPaddle, 310, [paddle2_y_pos]
 
+call drawBall, [ball_x_pos], [ball_y_pos]
+
+call drawMidLine
 
 ret
 
@@ -1017,7 +1020,7 @@ PROC fillBackground
 
   mov edi, 00000000h
   ; 2.Adress van het scherm naar edi = destination index
-  mov edi, 0a0000h ; Wijst naar destination
+  mov edi, [startaddr] ; Wijst naar destination
 
   ; 3.Aantal pixels in ecx
   mov eax, 320
@@ -1032,11 +1035,6 @@ PROC fillBackground
 
   ret
 ENDP fillBackground
-
-
-
-
-
 
 ;===============================================================================
 ;+++++++++++++++++++++++++++++++++++++ START +++++++++++++++++++++++++++++++++++
@@ -1054,7 +1052,7 @@ pop es 					            		; And write this value to ES
 ; VIDEO BUFFER
 
 mov esi, offset offset_screenBuffer ; points to a "db 64000 dup" array
-mov edi, 0a0000h ; the video memory
+mov edi, [startaddr] ; the video memory
 mov ecx, 64000 / 4 ; 320 * 200 , but copy groups four bytes
 rep movsd ; moves a dword and updates ecx , e s i and edi
 
@@ -1062,73 +1060,64 @@ rep movsd ; moves a dword and updates ecx , e s i and edi
 
 call setupVideo
 
-
-;call drawObjects
-;call drawPaddle, [paddle1_x_pos], [paddle1_y_pos]
-call drawPaddle, [paddle2_x_pos], [paddle2_y_pos]
-;call drawBall, [ball_x_pos], [ball_y_pos]
-call drawMidLine
-
 call initGameState
-
-;call keypress -> lelijk gedrogt!!
+call updatePalette, 2
 
 
 @@gameLoop:
 call handleUserInput
 call updateGameState
 call fillBackground, 0
-call drawMidLine
-call updatePalette, 2
+
+call moveBall, [ball_direction], [ball_angle]
+call movePaddle2
 
 call checkCollision
 
-call drawPaddle, 5, [paddle1_y_pos]
-call drawPaddle, 310, [paddle2_y_pos]
-
-;push eax
-;mov eax, [number8]
-;mov eax, [majesteit]
-;pop eax
-;--- Draw scores ---
-;push eax
-;lea eax,[majesteit]
-;call drawSprite, eax, 170, 0
-;pop eax
-call drawScore, [score1], 145, 0
-call drawScore, [score2], 170, 0
-
-;;;mov esi, offset offset_screenBuffer ; points to a "db 64000 dup" array
-;;;mov edi, 0a0000h ; the video memory
-;;;mov ecx, 64000 / 4 ; 320 * 200 , but copy groups four bytes
-;;;rep movsd ; moves a dword and updates ecx , e s i and edi
-
-;call movePaddle1
-call movePaddle2
-
-call moveBall, [ball_direction], [ball_angle]
-call drawBall, [ball_x_pos], [ball_y_pos]
+call drawObjects
 
 ; --- GAME LOGIC ---
 
-;cmp [score2], 10
-;jz @@no_winner
-;call drawSprite, [skull], 145, 0
+; Test om te zien of er iemand gewonnen heeft.
+
+cmp [score1], 10
+jz @@p1_wins
+cmp [score2], 10
+jz @@p2_wins
+jmp @@continue
+
+@@p1_wins:
+lea eax, [skull]
+call drawSprite, eax, 170, 0
+call drawScore, [score1], 145, 0
+jmp @@end_prog
+
+@@p2_wins:
+lea eax, [skull]
+call drawSprite, eax, 140, 0
+call drawScore, [score2], 170, 0
+jmp @@end_prog
+
+;--- ---
+@@continue:
+
+call drawScore, [score1], 145, 0
+call drawScore, [score2], 170, 0
 
 
 
-
-@@no_winner:
 call waitVBlank
 
 jmp @@gameLoop
 
-call keypress
 
-end_prog:
-mov ah,4ch
-mov al,00			;terminate program
-int 21h
+; END
+@@end_prog:
+
+call handleUserInput
+
+jmp @@end_prog
+
 
 
 
@@ -1146,13 +1135,9 @@ DATASEG
   ; Counts the gameloops. Useful for timing and planning events.
 	gameLoopCounter		dd 0
 
-	; Debug messages
-	moveMsg		db 'moveBlock$'
-	rotateMsg	db 'rotateBlock$'
-	pointMsg	db '.$'
 
-	; THE NEXT BIG THING
-	startaddr	dw	0a000h	;start of video memory
+	; VIDEO
+	startaddr	dd	0a0000h	;start of video memory
   colour	db	1
   offset_screenBuffer db 64000 dup(0) ; EEN ARRAY!
 
@@ -1172,11 +1157,9 @@ DATASEG
 
   ;P1
   score1 dd 0
-  ;score_digit1
 
   ;P2
   score2 dd 0
-  ;score_digit2
 
 
 	; /+/+/+/+ POSITIONS +/+/+/+/
@@ -1196,10 +1179,11 @@ DATASEG
 	ball_y_pos dw 100
 
 	; /+/+/+/+ SPEEDS +/+/+/+/
-  paddle1_speed dw 3
-  ball_speed dw 6
+  ; --- Paddle ---
+  paddle1_speed dw 8
+  paddle2_speed dw 1
 
-	; ++++++ TEMP (for testing purposes only) ++++++
+; --- Ball ---
 	ball_angle dw 1
 	ball_direction dw 3
 
