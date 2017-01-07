@@ -74,7 +74,7 @@ ENDP initGameState
 PROC setupVideo
 	USES eax
 
-	mov	ax, 13h
+	mov	ax, 13h ; Code for vidoe
 	int	10h
 
 	ret
@@ -206,9 +206,9 @@ USES eax, ebx
   mov bx, [ball_y_pos]
   mov cx, [paddle1_y_pos]
 
-  add cx, 5   ;nu is cx = paddle1_y_pos + 5
+  add cx, -5   ;nu is cx = paddle1_y_pos + 5
   cmp bx, cx
-  JLE @@sixToTwentyfive
+  jle @@sixToTwentyfive
 
   @@zeroToFive:
     ;als ax = -2 --> 2
@@ -223,7 +223,8 @@ USES eax, ebx
 
     cmp ax, -1
     jge @@mirrorAndAddOne
-
+    mov [ball_angle], -2
+    jmp @@noChange
 
     @@mirrorAndAddOne:
       call mirrorBallAngle
@@ -235,11 +236,12 @@ USES eax, ebx
 
 
   @@sixToTwentyfive:
-    add cx, 15   ;nu is cx = paddle2_y_pos + 20
+    add cx, -15   ;nu is cx = paddle2_y_pos + 20
     cmp bx, cx
-    JLE @@sixToTwenty
+    jle @@sixToTwenty
 
   @@twentyOneToTwentyFive:
+  call mirrorBallDirection
     ;als ax = -2 --> 1
     ;als ax = -1 --> 0
     ;als ax = 0 --> -1
@@ -253,7 +255,8 @@ USES eax, ebx
 
     cmp ax, 1
     jle @@mirrorAndDecOne
-
+    mov [ball_angle], 2
+    jmp @@noChange
 
     @@mirrorAndDecOne:
       call mirrorBallAngle
@@ -358,6 +361,8 @@ PROC checkCollisionRightPaddle
 
     cmp ax, 1
     jle @@mirrorAndDecOne
+    mov [ball_angle], -2
+    jmp @@noChange
 
 
     @@mirrorAndDecOne:
@@ -385,6 +390,8 @@ PROC checkCollisionRightPaddle
 
     cmp ax, -1
     jge @@mirrorAndAddOne
+    mov [ball_angle], 2
+    jmp @@noChange
 
 
     @@mirrorAndAddOne:
@@ -440,8 +447,15 @@ PROC checkCollisionLeftWall
 @@CollisionLeftWall:
   inc [score2]   ; Verhoog de score van player 2.
   mov [ball_x_pos], 148 ; Zet bal in het midden van het veld.
+  push bx
+  mov bx, [ball_direction]
+  neg bx
+  mov [ball_direction], bx
   mov [ball_y_pos], 98
-  mov [ball_angle], 0
+  mov bx, [ball_angle]
+  neg bx
+  mov [ball_angle], bx
+  pop bx
 
 @@noCollision:
 ret
@@ -504,14 +518,10 @@ ENDP mirrorBallDirection
 
 PROC updateGameState
 	USES eax, edx
-
-inc [gameLoopCounter]
-
-;mov ah, 9
-
-;int 21h
+  inc [gameLoopCounter]
+  ;mov ah, 9
+  ;int 21h
 	ret
-
 ENDP updateGameState
 
 
@@ -523,38 +533,38 @@ ENDP updateGameState
 PROC drawBall
   ARG @@x_pos:word, \
   @@y_pos:word
-  LOCAL @@x_pos_2:word, \
+    LOCAL @@x_pos_2:word, \
   @@y_pos_2:word
-  USES eax, ebx, ecx, edx, edi
+    USES eax, ebx, ecx, edx, edi
 
-; Specs van de ball
-mov cx, [ball_x_pos] ; kolom
-mov dx, [ball_y_pos] ; rij -> WORDT NIET GEMOVED NAAR DX REGISTER
-mov al, 7 ; kleur (7 = white)
-mov ah, 0ch
-
-
-mov bx, cx
-add bx, [ball_width]
-mov [@@x_pos_2], bx
+    ; Specs van de ball
+    mov cx, [ball_x_pos] ; kolom
+    mov dx, [ball_y_pos] ; rij -> WORDT NIET GEMOVED NAAR DX REGISTER
+    mov al, 7 ; kleur (7 = white)
+    mov ah, 0ch
 
 
-mov bx, dx
-add bx, [ball_width]
-mov [@@y_pos_2], bx
+    mov bx, cx
+    add bx, [ball_width]
+    mov [@@x_pos_2], bx
 
-@@draw_ball:
-inc cx
-int 10h
-cmp cx, [@@x_pos_2]
-JNE @@draw_ball
 
-mov cx, [@@x_pos]  ; reset
-inc dx      ; volgende rij
-cmp dx, [@@y_pos_2]
-JNE @@draw_ball
+    mov bx, dx
+    add bx, [ball_width]
+    mov [@@y_pos_2], bx
 
-ret
+  @@draw_ball:
+    inc cx
+    int 10h
+    cmp cx, [@@x_pos_2]
+    JNE @@draw_ball
+
+    mov cx, [@@x_pos]  ; reset
+    inc dx      ; volgende rij
+    cmp dx, [@@y_pos_2]
+    JNE @@draw_ball
+
+  ret
 
 ENDP drawBall
 
@@ -567,7 +577,9 @@ PROC moveBall
 	mov [ball_x_pos], ax
 
 	mov ax, [ball_y_pos]
-	add ax, [ball_angle]
+  mov dx, [ball_angle]
+  neg dx
+	add ax, dx
 	mov [ball_y_pos], ax
 
 	ret
@@ -583,21 +595,21 @@ ENDP moveBall
 PROC drawMidLine
   USES eax, ecx, edx
 
-@@middle_line:
-; Specs van de line
-mov cx, 160 ; kolom
-mov dx, 0 ; rij
-mov al, 7 ; start kleur
-mov ah, 0ch
+  @@middle_line:
+    ; Specs van de line
+    mov cx, 160 ; kolom
+    mov dx, 0 ; rij
+    mov al, 7 ; start kleur
+    mov ah, 0ch
 
-@@draw_middle_line:
-; Lijn is een rechthoek met breedte 1, vandaar minder code dan rechthoek
-int 10h
-inc dx      ; volgende rij
-cmp dx, 200
-JNE @@draw_middle_line
+  @@draw_middle_line:
+    ; Lijn is een rechthoek met breedte 1, vandaar minder code dan rechthoek
+    int 10h
+    inc dx      ; volgende rij
+    cmp dx, 200
+    JNE @@draw_middle_line
 
-ret
+  ret
 
 ENDP drawMidLine
 
@@ -611,81 +623,77 @@ PROC drawPaddle
 	LOCAL @@x_pos_2:word, @@y_pos_2:word
   USES eax, ebx, ecx, edx
 
-@@paddle:
-;Zet info van de figuur in de registers.
-mov cx, [@@x_pos] ; kolom
-mov dx, [@@y_pos]  ; rij
-mov al, 7 ; kleur
-mov ah, 0ch ; EUREKA!!!!!
+  @@paddle:
+    ;Zet info van de figuur in de registers.
+    mov cx, [@@x_pos] ; kolom
+    mov dx, [@@y_pos]  ; rij
+    mov al, 7 ; kleur
+    mov ah, 0ch ; EUREKA!!!!!
 
-; Voeg breedte toe aan de x-waarde.
-mov bx, cx
-add bx, [paddle_width]
-mov [@@x_pos_2], bx
+    ; Voeg breedte toe aan de x-waarde.
+    mov bx, cx
+    add bx, [paddle_width]
+    mov [@@x_pos_2], bx
 
-; Voeg hoogte toe aan y-waarde.
-mov bx, dx
-add bx, [paddle_heigth]
-mov [@@y_pos_2], bx
+    ; Voeg hoogte toe aan y-waarde.
+    mov bx, dx
+    add bx, [paddle_heigth]
+    mov [@@y_pos_2], bx
 
-; Teken paddle
-@@draw_paddle:
-inc cx
-int 10h
-cmp cx, [@@x_pos_2] ; (314 - 310 = 4 breedte van paddle)
-JNE @@draw_paddle
+  ; Teken paddle
+  @@draw_paddle:
+    inc cx
+    int 10h
+    cmp cx, [@@x_pos_2] ; (314 - 310 = 4 breedte van paddle)
+    JNE @@draw_paddle
 
-mov cx, [@@x_pos]  ; reset
-inc dx      ; volgende rij
-cmp dx, [@@y_pos_2]
-JNE @@draw_paddle
+    mov cx, [@@x_pos]  ; reset
+    inc dx      ; volgende rij
+    cmp dx, [@@y_pos_2]
+    JNE @@draw_paddle
 
-ret
+  ret
 
 ENDP drawPaddle
 
 
 ;+++ PADDLE AI +++
 PROC movePaddle2
-USES eax, ebx
+  USES eax, ebx
 
-mov ax, [paddle2_y_pos]
-mov bx, [ball_y_pos]
+  mov ax, [paddle2_y_pos]
+  mov bx, [ball_y_pos]
 
-; Controle of de paddle niet buiten scherm dreigt te gaan.
-cmp ax, 0
-JLE @@increment
-cmp ax, 175
-JGE @@decrement
+  ; Controle of de paddle niet buiten scherm dreigt te gaan.
+  cmp ax, 0
+  JLE @@increment
+  cmp ax, 175
+  JGE @@decrement
 
-cmp ax, bx
-jge @@moveUp
-@@moveDown:
-add ax, [paddle2_speed]
-inc ax
-inc ax
-jmp @@end
-@@moveUp:
-mov bx, [paddle2_speed]
-neg bx
-add ax, bx
-jmp @@end
+  cmp ax, bx
+  jge @@moveUp
+  @@moveDown:
+    add ax, [paddle2_speed]
+    jmp @@end
+  @@moveUp:
+    mov bx, [paddle2_speed]
+    neg bx
+    add ax, bx
+    jmp @@end
 
 
-@@decrement:
-dec ax
-jmp @@end
+  @@decrement:
+    sub ax, [paddle2_speed]
+    jmp @@end
 
 
-@@increment:
-inc ax
-jmp @@end
+  @@increment:
+    add ax, [paddle2_speed]
+    jmp @@end
 
-@@end:
-mov [paddle2_y_pos], ax
-ret
-
-
+  @@end:
+    mov [paddle2_y_pos], ax
+    ret
 ENDP movePaddle2
 
 PROC movePaddle1
@@ -957,12 +965,12 @@ PROC handleUserInput
 @@n1:
 	cmp ah, 77	; arrow right
 	jne @@n2
-	;call moveBall, 1, -10
+	inc [paddle2_speed]
 	jmp @@no_key_pressed
 @@n2:
 	cmp ah, 75	; arrow left
 	jne @@n3
-	call incScore, 1
+	dec [paddle2_speed]
 	jmp @@no_key_pressed
 
 
@@ -1062,6 +1070,7 @@ call setupVideo
 
 call initGameState
 call updatePalette, 2
+;call keypress
 
 
 @@gameLoop:
@@ -1180,12 +1189,13 @@ DATASEG
 
 	; /+/+/+/+ SPEEDS +/+/+/+/
   ; --- Paddle ---
-  paddle1_speed dw 8
+  paddle1_speed dw 6
   paddle2_speed dw 1
 
 ; --- Ball ---
+  ball_speed dw 1
 	ball_angle dw 1
-	ball_direction dw 3
+	ball_direction dw 2
 
   ; /+/+/+/+ SPRITES +/+/+/+/
 
