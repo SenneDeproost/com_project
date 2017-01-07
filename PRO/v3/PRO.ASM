@@ -477,7 +477,7 @@ PROC checkCollisionRightWall
   inc [score1]          ; Verhoog de score van player 2.
   mov [ball_x_pos], 148 ; Zet bal in het midden van het veld.
   mov [ball_y_pos], 98
-  mov [ball_angle], 0
+  ;neg [ball_angle]
 
 @@noCollision:
 ret
@@ -1194,7 +1194,7 @@ DATASEG
 
 ; --- Ball ---
   ball_speed dw 1
-	ball_angle dw 1
+	ball_angle dw 0
 	ball_direction dw 2
 
   ; /+/+/+/+ SPRITES +/+/+/+/
